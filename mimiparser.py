@@ -209,6 +209,18 @@ def sam_save(all_results):
     # remove entires with no cred
     all_results = [i for i in all_results if 'ntlm' in i]
 
+    # remove duplicate entries
+    # an entry is duplcate if it has the same: computer + user + ntlm hash
+    seen = set()
+    i = 0
+    while i < len(all_results):
+        identifier = (all_results[i]['computer'], all_results[i]['user'], all_results[i]['ntlm'])
+        if identifier in seen:
+            del all_results[i]
+        else:
+            seen.add(identifier)
+            i += 1
+
     with open('sam.json', 'w') as file:
         json.dump(all_results, file, indent=4)
 
@@ -354,7 +366,7 @@ def generate_html_table(data, docname):
         }
     </style>
     """
-    html = f'<h2>{docname}</h2>\n<table>\n'
+    html = f'<a href=./{docname.lower()}.html ><h2>{docname}</h2></a>\n<table>\n'
     html += '  <tr>\n'
     for key in data[0].keys():
         html += f'    <th>{key.upper()}</th>\n'
@@ -403,9 +415,10 @@ def web_gen():
     with open(index_file_path, 'w') as file:
         file.write(index_html)
 
-
 def main():
-    parser = argparse.ArgumentParser(description='Execute logon.py or sam.py based on user arguments.')
+    parser = argparse.ArgumentParser(
+        description='Parse Mimikatz output files and generate HTML files from JSON files'
+    )
     parser.add_argument('--logon', '-l', action='store_true', help='Parse Logon')
     parser.add_argument('--web', '-w', action='store_true', help='Generate HTML file from JSON files')
     parser.add_argument('--sam', '-s', action='store_true', help='Parse SAM')
@@ -413,6 +426,11 @@ def main():
     parser.add_argument('--ekey', '-e', action='store_true', help='Parse Ekey')
 
     args = parser.parse_args()
+
+    # If no arguments are provided, display help
+    if not any(vars(args).values()):
+        parser.print_help()
+        return
 
     if args.logon:
         files = gather_files_from_folders("logon")
