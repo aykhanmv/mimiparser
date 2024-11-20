@@ -179,8 +179,12 @@ def logon_save(all_results):
         if any(pattern in collect_creds[i]['user'] for pattern in patterns):
             collect_creds.pop(i)
 
-    with open('logon.json', 'w') as file:
-        json.dump(collect_creds, file, indent=4)
+    # saving the results to a json file
+    if collect_creds:
+        with open('logon.json', 'w') as file:
+            json.dump(collect_creds, file, indent=4)
+    else:
+        print("No Logon credentials found. 'logon.json' was not created.")
 
 
 def sam_extract(file_path):
@@ -226,8 +230,12 @@ def sam_save(all_results):
             seen.add(identifier)
             i += 1
 
-    with open('sam.json', 'w') as file:
-        json.dump(all_results, file, indent=4)
+    # saving the results to a json file
+    if all_results:
+        with open('sam.json', 'w') as file:
+            json.dump(all_results, file, indent=4)
+    else:
+        print("No SAM credentials found. 'sam.json' was not created.")
 
 
 def dcc_extract(file_path):
@@ -260,8 +268,12 @@ def dcc_extract(file_path):
 
 
 def dcc_save(all_results):
-    with open('dcc.json', 'w') as file:
-        json.dump(all_results, file, indent=4)
+    # saving the results to a json file
+    if all_results:
+        with open('dcc.json', 'w') as file:
+            json.dump(all_results, file, indent=4)
+    else:
+        print("No DCC credentials found. 'dcc.json' was not created.")
 
 
 def ekey_extract(file_path):
@@ -335,8 +347,12 @@ def ekey_save(all_results):
         entry.clear()
         entry.update(reordered_entry)
 
-    with open('ekey.json', 'w') as file:
-        json.dump(all_results, file, indent=4)
+    # saving the results to a json file
+    if all_results:
+        with open('ekey.json', 'w') as file:
+            json.dump(all_results, file, indent=4)
+    else:
+        print("No Ekey credentials found. 'ekey.json' was not created.")
 
 
 def generate_html_table(data, docname):
@@ -398,6 +414,7 @@ def web_gen():
     desired_order = ["sam.json", "logon.json", "dcc.json", "ekey.json"]
     all_html_tables = []
     style = ""
+    valid_data_found = False
 
     for filename in desired_order:
         json_file_path = os.path.join(current_dir, filename)
@@ -406,12 +423,12 @@ def web_gen():
                 try:
                     data = json.load(file)
                     if not data:
-                        print(f"Skipping empty file: {filename}")
                         continue
                 except json.JSONDecodeError:
-                    print(f"Skipping invalid JSON file: {filename}")
                     continue
-            
+                
+            valid_data_found = True
+
             docname = filename.split('.')[0].capitalize()
             html_table, style = generate_html_table(data, docname)
             all_html_tables.append(html_table)
@@ -424,14 +441,19 @@ def web_gen():
                            f"<meta charset='UTF-8'>\n<title>{docname}</title>\n"
                            f"{style}</head>\n<body>\n{html_table}</body>\n</html>")
 
-    index_html = "<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n<title>Index</title>\n"
-    index_html += style + "</head>\n<body>\n"
-    index_html += "\n".join(all_html_tables)
-    index_html += "</body>\n</html>"
+    # only generate index.html if valid data is found
+    if valid_data_found:
+        index_html = "<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n<title>Index</title>\n"
+        index_html += style + "</head>\n<body>\n"
+        index_html += "\n".join(all_html_tables)
+        index_html += "</body>\n</html>"
 
-    index_file_path = os.path.join(current_dir, "index.html")
-    with open(index_file_path, 'w') as file:
-        file.write(index_html)
+        index_file_path = os.path.join(current_dir, "index.html")
+        with open(index_file_path, 'w') as file:
+            file.write(index_html)
+    else:
+        print("No valid data found in the JSON files. 'index.html' was not created.")
+
 
 
 def main():
