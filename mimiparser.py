@@ -3,6 +3,7 @@ import os
 import re
 import json
 
+
 def gather_files_from_folders(methodstr):
     base_path = os.path.dirname(os.path.abspath(__file__))
     all_results = []
@@ -15,6 +16,7 @@ def gather_files_from_folders(methodstr):
                     file_path = os.path.join(folder_path, file_name)
                     all_results.append(file_path)
     return all_results
+
 
 def logon_extract(file_path):
     results = []
@@ -99,6 +101,7 @@ def logon_extract(file_path):
 
     return results
 
+
 def logon_save(all_results):
     # replace "(null)" valuse with null
     for result in all_results:
@@ -179,6 +182,7 @@ def logon_save(all_results):
     with open('logon.json', 'w') as file:
         json.dump(collect_creds, file, indent=4)
 
+
 def sam_extract(file_path):
     results = []
     computer_name = os.path.basename(os.path.dirname(file_path))
@@ -205,6 +209,7 @@ def sam_extract(file_path):
 
     return results
 
+
 def sam_save(all_results):
     # remove entires with no cred
     all_results = [i for i in all_results if 'ntlm' in i]
@@ -223,6 +228,7 @@ def sam_save(all_results):
 
     with open('sam.json', 'w') as file:
         json.dump(all_results, file, indent=4)
+
 
 def dcc_extract(file_path):
     results = []
@@ -252,9 +258,11 @@ def dcc_extract(file_path):
 
     return results
 
+
 def dcc_save(all_results):
     with open('dcc.json', 'w') as file:
         json.dump(all_results, file, indent=4)
+
 
 def ekey_extract(file_path):
     results = []
@@ -297,6 +305,7 @@ def ekey_extract(file_path):
             
     return results
 
+
 def ekey_save(all_results):
     # remove entries that don't have an ekey
     all_results = [result for result in all_results if 'ekey' in result]
@@ -328,6 +337,7 @@ def ekey_save(all_results):
 
     with open('ekey.json', 'w') as file:
         json.dump(all_results, file, indent=4)
+
 
 def generate_html_table(data, docname):
     style = """
@@ -381,6 +391,7 @@ def generate_html_table(data, docname):
     html += '</table>\n'
     return html, style
 
+
 def web_gen():
     current_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -392,7 +403,14 @@ def web_gen():
         json_file_path = os.path.join(current_dir, filename)
         if os.path.exists(json_file_path):
             with open(json_file_path, 'r') as file:
-                data = json.load(file)
+                try:
+                    data = json.load(file)
+                    if not data:
+                        print(f"Skipping empty file: {filename}")
+                        continue
+                except json.JSONDecodeError:
+                    print(f"Skipping invalid JSON file: {filename}")
+                    continue
             
             docname = filename.split('.')[0].capitalize()
             html_table, style = generate_html_table(data, docname)
@@ -415,6 +433,7 @@ def web_gen():
     with open(index_file_path, 'w') as file:
         file.write(index_html)
 
+
 def main():
     parser = argparse.ArgumentParser(
         description='Parse Mimikatz output files and generate HTML files from JSON files'
@@ -427,7 +446,7 @@ def main():
 
     args = parser.parse_args()
 
-    # If no arguments are provided, display help
+    # if no arguments are provided, display help
     if not any(vars(args).values()):
         parser.print_help()
         return
